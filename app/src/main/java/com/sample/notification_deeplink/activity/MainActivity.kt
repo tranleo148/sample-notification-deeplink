@@ -1,25 +1,32 @@
 package com.sample.notification_deeplink.activity
 
 import android.Manifest
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
+import com.sample.notification_deeplink.R
 import com.sample.notification_deeplink.databinding.ActivityMainBinding
 import com.sample.notification_deeplink.services.MyFirebaseMessagingService.Companion.KEY_LINK
 
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var dialog: Dialog
 
     companion object {
         private const val TAG = "MainActivity"
+        private const val DELAY_OPEN_WEB = 1000L // delay 1s to show loading screen before open web
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(R.layout.loading)
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -105,9 +115,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openWebBrowser(data: String) {
-        var url = data
-        if (!url.startsWith("http://") && !url.startsWith("https://"))
-            url = "http://$url"
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        dialog.show()
+        Handler(Looper.getMainLooper()).postDelayed({
+            dialog.dismiss()
+            var url = data
+            if (!url.startsWith("http://") && !url.startsWith("https://"))
+                url = "http://$url"
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }, DELAY_OPEN_WEB)
     }
 }
